@@ -315,7 +315,7 @@ namespace AspNetCore.Identity.MongoDB
             return Task.CompletedTask;
         }
 
-        public async Task<IList<TUser>> GetUsersForClaimAsync(Claim claim, CancellationToken cancellationToken)
+        public async Task<IList<TUser>> GetUsersForClaimAsync(Claim claim, CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
@@ -335,7 +335,6 @@ namespace AspNetCore.Identity.MongoDB
         #region IUserRoleStore
         public Task AddToRoleAsync(TUser user, string roleName, CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
             Ensure.IsNotNull(user, nameof(user));
@@ -348,7 +347,6 @@ namespace AspNetCore.Identity.MongoDB
 
         public Task RemoveFromRoleAsync(TUser user, string roleName, CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
             Ensure.IsNotNull(user, nameof(user));
@@ -361,7 +359,6 @@ namespace AspNetCore.Identity.MongoDB
 
         public Task<IList<string>> GetRolesAsync(TUser user, CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
             Ensure.IsNotNull(user, nameof(user));
@@ -371,7 +368,6 @@ namespace AspNetCore.Identity.MongoDB
 
         public Task<bool> IsInRoleAsync(TUser user, string roleName, CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
             Ensure.IsNotNull(user, nameof(user));
@@ -380,7 +376,7 @@ namespace AspNetCore.Identity.MongoDB
             return Task.FromResult( user.Roles.Any(ur => ur == roleName));
         }
 
-        public async Task<IList<TUser>> GetUsersInRoleAsync(string roleName, CancellationToken cancellationToken)
+        public async Task<IList<TUser>> GetUsersInRoleAsync(string roleName, CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
