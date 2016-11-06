@@ -4,7 +4,10 @@
   "authors": [ "Omar Ballerani" ],
 
   "packOptions": {
-    "repository": { "url": "https://github.com/omar-ballerani/AspNetCore.Identity.MongoDB" },
+    "licenseUrl": "https://github.com/omar-ballerani/AspNetCore.Identity.MongoDB/blob/master/LICENSE.txt",
+    "repository": {
+      "url": "https://github.com/omar-ballerani/AspNetCore.Identity.MongoDB"
+    },
     "tags": [
       "aspnetcore",
       "identity",
