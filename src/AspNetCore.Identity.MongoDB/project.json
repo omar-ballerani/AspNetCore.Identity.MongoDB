@@ -1,0 +1,29 @@
+﻿{
+  "version": "0.1.0-*",
+  "description": "asp.net core Identity MongoDB implementation ",
+  "authors": [ "Omar Ballerani" ],
+
+  "packOptions": {
+    "repository": { "url": "https://github.com/omar-ballerani/AspNetCore.Identity.MongoDB" },
+    "tags": [
+      "aspnetcore",
+      "identity",
+      "membership",
+      "mongodb"
+    ]
+  },
+
+
+  "dependencies": {
+    "NETStandard.Library": "1.6.0",
+    "Microsoft.AspNetCore.Identity": "1.0.0",
+    "Microsoft.Extensions.Logging.Abstractions": "1.0.0",
+    "MongoDB.Driver": "2.3.0"
+  },
+
+  "frameworks": {
+    "netstandard1.6": {
+      "imports": "dnxcore50"
+    }
+  }
+}
