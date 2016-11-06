@@ -8,13 +8,14 @@ using MongoDB.Driver;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver.Core.Misc;
 using System.ComponentModel;
+using System.Security.Claims;
 
 namespace AspNetCore.Identity.MongoDB
 {
     public class UserStore<TUser, TKey> :
-        IUserLoginStore<TUser>
+        IUserLoginStore<TUser>,
+        IUserClaimStore<TUser>
         //IUserRoleStore<TUser>,
-        //IUserClaimStore<TUser>,
         //IUserPasswordStore<TUser>,
         //IUserSecurityStampStore<TUser>,
         //IUserEmailStore<TUser>,
@@ -263,6 +264,86 @@ namespace AspNetCore.Identity.MongoDB
         public void Dispose()
         {
             _disposed = true;
+        }
+
+        public Task<IList<Claim>> GetClaimsAsync(TUser user, CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(user, nameof(user));
+
+            var claims = from c in user.Claims
+                         select c.ToClaim();
+            return Task.FromResult<IList<Claim>>(claims.ToList());
+        }
+
+        public Task AddClaimsAsync(TUser user, IEnumerable<Claim> claims, CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(user, nameof(user));
+
+            Ensure.IsNotNull(claims, nameof(claims));
+            
+            foreach (var claim in claims)
+            {
+                user.Claims.Add(new IdentityUserClaim(claim));
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task ReplaceClaimAsync(TUser user, Claim claim, Claim newClaim, CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(user, nameof(user));
+            Ensure.IsNotNull(claim, nameof(claim));
+            Ensure.IsNotNull(newClaim, nameof(newClaim));
+
+            var matchedClaims = user.Claims.Where(uc => uc.ClaimValue == claim.Value && uc.ClaimType == claim.Type);
+            foreach (var matchedClaim in matchedClaims)
+            {
+                matchedClaim.ClaimValue = newClaim.Value;
+                matchedClaim.ClaimType = newClaim.Type;
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task RemoveClaimsAsync(TUser user, IEnumerable<Claim> claims, CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(user, nameof(user));
+            Ensure.IsNotNull(claims, nameof(claims));
+
+            foreach (var claim in claims)
+            {
+                var matchedClaims = user.Claims.Where(uc => uc.ClaimValue == claim.Value && uc.ClaimType == claim.Type).ToList();
+                foreach (var c in matchedClaims)
+                {
+                    user.Claims.Remove(c);
+                }
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public async Task<IList<TUser>> GetUsersForClaimAsync(Claim claim, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(claim, nameof(claim));
+
+            var filter = Builders<TUser>.Filter.ElemMatch(u => u.Claims,
+                 Builders<IdentityUserClaim>.Filter.And(
+                   Builders<IdentityUserClaim>.Filter.Eq(lg => lg.ClaimType, claim.Type),
+                   Builders<IdentityUserClaim>.Filter.Eq(lg => lg.ClaimValue, claim.Value)
+               ));
+
+            return await UsersCollection.Find(filter).ToListAsync();
         }
     }
 }

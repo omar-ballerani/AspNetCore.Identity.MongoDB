@@ -1,4 +1,5 @@
-﻿using System.Security.Claims;
+﻿using System;
+using System.Security.Claims;
 
 namespace AspNetCore.Identity.MongoDB
 {
@@ -8,13 +9,18 @@ namespace AspNetCore.Identity.MongoDB
     /// <typeparam name="TKey">The type used for the primary key for this user that possesses this claim.</typeparam>
     public class IdentityUserClaim
     {
+        public IdentityUserClaim(Claim claim): this()
+        {
+            this.ClaimType = claim.Type;
+            this.ClaimValue = claim.Value;
+        }
 
         /// <summary>
         /// Default ctor - Initialize the istance
         /// </summary>
         public IdentityUserClaim()
         {
-            this.Id = System.Guid.NewGuid().ToString();
+            this.Id = Guid.NewGuid().ToString();
         }
         /// <summary>
         /// Gets or sets the identifier for this user claim.
@@ -40,14 +46,5 @@ namespace AspNetCore.Identity.MongoDB
             return new Claim(ClaimType, ClaimValue);
         }
 
-        /// <summary>
-        /// Reads the type and value from the Claim.
-        /// </summary>
-        /// <param name="claim"></param>
-        public virtual void InitializeFromClaim(Claim claim)
-        {
-            ClaimType = claim.Type;
-            ClaimValue = claim.Value;
-        }
     }
 }
