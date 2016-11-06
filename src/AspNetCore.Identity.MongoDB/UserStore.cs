@@ -1,11 +1,268 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Identity;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Threading;
+using MongoDB.Driver;
+using Microsoft.Extensions.Logging;
+using MongoDB.Driver.Core.Misc;
+using System.ComponentModel;
 
 namespace AspNetCore.Identity.MongoDB
 {
-    public class UserStore
+    public class UserStore<TUser, TKey> :
+        IUserLoginStore<TUser>
+        //IUserRoleStore<TUser>,
+        //IUserClaimStore<TUser>,
+        //IUserPasswordStore<TUser>,
+        //IUserSecurityStampStore<TUser>,
+        //IUserEmailStore<TUser>,
+        //IUserLockoutStore<TUser>,
+        //IUserPhoneNumberStore<TUser>,
+        //IQueryableUserStore<TUser>,
+        //IUserTwoFactorStore<TUser>,
+        //IUserAuthenticationTokenStore<TUser>
+        where TUser : IdentityUser<TKey>
+        where TKey : IEquatable<TKey>
     {
+        private bool _disposed;
+
+        public UserStore(IMongoDatabase mongoDatabase, IdentityErrorDescriber describer = null)
+        {
+            Ensure.IsNotNull(mongoDatabase, nameof(mongoDatabase));
+            ErrorDescriber = describer ?? new IdentityErrorDescriber();
+            UsersCollection = mongoDatabase.GetCollection<TUser>("Users");
+        }
+
+        /// <summary>
+        /// Gets the database context for this store.
+        /// </summary>
+        protected IMongoCollection<TUser> UsersCollection { get; private set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="IdentityErrorDescriber"/> for any error that occurred with the current operation.
+        /// </summary>
+        protected IdentityErrorDescriber ErrorDescriber { get; set; }
+
+        public Task AddLoginAsync(TUser user, UserLoginInfo login, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(user, nameof(user));
+            Ensure.IsNotNull(login, nameof(login));
+
+            user.Logins.Add(new IdentityUserLogin(login));
+
+            return Task.CompletedTask;
+        }
+
+        public async Task<IdentityResult> CreateAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(user, nameof(user));
+            
+            await UsersCollection.InsertOneAsync(user, null, cancellationToken);
+
+            return IdentityResult.Success;
+        }
+
+        public async Task<IdentityResult> DeleteAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(user, nameof(user));
+
+            var filter = Builders<TUser>.Filter.Eq(u => u.Id, user.Id);
+
+            await UsersCollection.DeleteOneAsync(filter, cancellationToken);
+
+            return IdentityResult.Success;
+        }
+
+        public async Task<TUser> FindByIdAsync(string userId, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            var convertedId = ConvertIdFromString(userId);
+
+            var filter = Builders<TUser>.Filter.Eq(u => u.Id, convertedId);
+
+            return await UsersCollection.Find(filter).SingleOrDefaultAsync();
+        }
+
+        /// <summary>
+        /// Converts the provided <paramref name="id"/> to a strongly typed key object.
+        /// </summary>
+        /// <param name="id">The id to convert.</param>
+        /// <returns>An instance of <typeparamref name="TKey"/> representing the provided <paramref name="id"/>.</returns>
+        protected virtual TKey ConvertIdFromString(string id)
+        {
+            if (id == null)
+            {
+                return default(TKey);
+            }
+            return (TKey)TypeDescriptor.GetConverter(typeof(TKey)).ConvertFromInvariantString(id);
+        }
+
+        public async Task<TUser> FindByLoginAsync(string loginProvider, string providerKey, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNullOrEmpty(loginProvider, nameof(loginProvider));
+            Ensure.IsNotNullOrEmpty(providerKey, nameof(providerKey));
+
+            var filter = Builders<TUser>.Filter.ElemMatch(u => u.Logins,
+                 Builders<IdentityUserLogin>.Filter.And(
+                   Builders<IdentityUserLogin>.Filter.Eq(lg => lg.LoginProvider, loginProvider),
+                   Builders<IdentityUserLogin>.Filter.Eq(lg => lg.ProviderKey, providerKey)
+               ));
+
+            return await UsersCollection.Find(filter).FirstOrDefaultAsync();
+        }
+
+        public async Task<TUser> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNullOrEmpty(normalizedUserName, nameof(normalizedUserName));
+
+            var filter = Builders<TUser>.Filter.Eq(u => u.NormalizedUserName, normalizedUserName);
+
+            return await UsersCollection.Find(filter).FirstOrDefaultAsync();
+        }
+
+        public Task<IList<UserLoginInfo>> GetLoginsAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            var logins = from l in user.Logins
+                         select new UserLoginInfo(l.LoginProvider, l.ProviderKey, l.ProviderDisplayName);
+            return Task.FromResult<IList<UserLoginInfo>>(logins.ToList());
+        }
+
+        public Task<string> GetNormalizedUserNameAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(user, nameof(user));
+            
+            return Task.FromResult(user.NormalizedUserName);
+        }
+
+        public Task<string> GetUserIdAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(user, nameof(user));
+
+            return Task.FromResult(ConvertIdToString(user.Id));
+        }
+
+        /// <summary>
+        /// Converts the provided <paramref name="id"/> to its string representation.
+        /// </summary>
+        /// <param name="id">The id to convert.</param>
+        /// <returns>An <see cref="string"/> representation of the provided <paramref name="id"/>.</returns>
+        protected virtual string ConvertIdToString(TKey id)
+        {
+            if (object.Equals(id, default(TKey)))
+            {
+                return null;
+            }
+            return id.ToString();
+        }
+
+        public Task<string> GetUserNameAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(user, nameof(user));
+
+            return Task.FromResult(user.UserName);
+        }
+
+        public Task RemoveLoginAsync(TUser user, string loginProvider, string providerKey, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(user, nameof(user));
+            Ensure.IsNotNullOrEmpty(loginProvider, nameof(loginProvider));
+            Ensure.IsNotNullOrEmpty(providerKey, nameof(providerKey));
+
+            var login = user.Logins.FirstOrDefault(ul => ul.LoginProvider == loginProvider && ul.ProviderKey == providerKey);
+            if (login != null)
+            {
+                user.Logins.Remove(login);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task SetNormalizedUserNameAsync(TUser user, string normalizedName, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(user, nameof(user));
+
+            user.NormalizedUserName = normalizedName;
+
+            return Task.CompletedTask;
+        }
+
+        public Task SetUserNameAsync(TUser user, string userName, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(user, nameof(user));
+
+            user.UserName = userName;
+            return Task.CompletedTask;
+        }
+
+        public async Task<IdentityResult> UpdateAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(user, nameof(user));
+
+            var filter = Builders<TUser>.Filter.Eq(u => u.Id, user.Id);
+
+            var replaceResult = await UsersCollection.ReplaceOneAsync(filter, user, new UpdateOptions { IsUpsert = false }, cancellationToken);
+
+            return replaceResult.Success() ? IdentityResult.Success : IdentityResult.Failed();
+        }
+
+
+        /// <summary>
+        /// Throws if this class has been disposed.
+        /// </summary>
+        protected void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
+        }
+
+        /// <summary>
+        /// Dispose the store
+        /// </summary>
+        public void Dispose()
+        {
+            _disposed = true;
+        }
     }
 }
