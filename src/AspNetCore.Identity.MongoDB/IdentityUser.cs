@@ -137,17 +137,17 @@ namespace AspNetCore.Identity.MongoDB
         public virtual int AccessFailedCount { get; set; }
 
         /// <summary>
-        /// Navigation property for the roles this user belongs to.
+        /// User roles
         /// </summary>
-        public virtual ICollection<IdentityUserRole> Roles { get; } = new List<IdentityUserRole>();
+        public virtual ICollection<string> Roles { get; } = new List<string>();
 
         /// <summary>
-        /// Navigation property for the claims this user possesses.
+        /// Property for the claims this user possesses.
         /// </summary>
         public virtual ICollection<IdentityUserClaim> Claims { get; } = new List<IdentityUserClaim>();
 
         /// <summary>
-        /// Navigation property for this users login accounts.
+        /// Property for this users login accounts.
         /// </summary>
         public virtual ICollection<IdentityUserLogin> Logins { get; } = new List<IdentityUserLogin>();
 

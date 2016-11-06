@@ -14,8 +14,8 @@ namespace AspNetCore.Identity.MongoDB
 {
     public class UserStore<TUser, TKey> :
         IUserLoginStore<TUser>,
-        IUserClaimStore<TUser>
-        //IUserRoleStore<TUser>,
+        IUserClaimStore<TUser>,
+        IUserRoleStore<TUser>
         //IUserPasswordStore<TUser>,
         //IUserSecurityStampStore<TUser>,
         //IUserEmailStore<TUser>,
@@ -332,6 +332,67 @@ namespace AspNetCore.Identity.MongoDB
         }
         #endregion
 
+        #region IUserRoleStore
+        public Task AddToRoleAsync(TUser user, string roleName, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(user, nameof(user));
+            Ensure.IsNotNullOrEmpty(roleName, nameof(roleName));
+
+            user.Roles.Add(roleName);
+
+            return Task.CompletedTask;
+        }
+
+        public Task RemoveFromRoleAsync(TUser user, string roleName, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(user, nameof(user));
+            Ensure.IsNotNullOrEmpty(roleName, nameof(roleName));
+
+            user.Roles.Remove(roleName);
+
+            return Task.CompletedTask;
+        }
+
+        public Task<IList<string>> GetRolesAsync(TUser user, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(user, nameof(user));
+
+            return Task.FromResult<IList<string>>(user.Roles.ToList());
+        }
+
+        public Task<bool> IsInRoleAsync(TUser user, string roleName, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(user, nameof(user));
+            Ensure.IsNotNullOrEmpty(roleName, nameof(roleName));
+
+            return Task.FromResult( user.Roles.Any(ur => ur == roleName));
+        }
+
+        public async Task<IList<TUser>> GetUsersInRoleAsync(string roleName, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNullOrEmpty(roleName, nameof(roleName));
+
+            var filter = Builders<TUser>.Filter.ElemMatch(u => u.Roles, ur => ur == roleName);
+
+            return await UsersCollection.Find(filter).ToListAsync();
+        }
+        #endregion
+
         #region Dispose
         /// <summary>
         /// Throws if this class has been disposed.
@@ -351,6 +412,7 @@ namespace AspNetCore.Identity.MongoDB
         {
             _disposed = true;
         }
+
         #endregion
 
     }
