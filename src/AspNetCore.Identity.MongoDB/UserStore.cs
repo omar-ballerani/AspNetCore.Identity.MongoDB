@@ -46,26 +46,14 @@ namespace AspNetCore.Identity.MongoDB
         /// </summary>
         protected IdentityErrorDescriber ErrorDescriber { get; set; }
 
-        public Task AddLoginAsync(TUser user, UserLoginInfo login, CancellationToken cancellationToken = default(CancellationToken))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            ThrowIfDisposed();
-
-            Ensure.IsNotNull(user, nameof(user));
-            Ensure.IsNotNull(login, nameof(login));
-
-            user.Logins.Add(new IdentityUserLogin(login));
-
-            return Task.CompletedTask;
-        }
-
+        #region IUserStore
         public async Task<IdentityResult> CreateAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
             Ensure.IsNotNull(user, nameof(user));
-            
+
             await UsersCollection.InsertOneAsync(user, null, cancellationToken);
 
             return IdentityResult.Success;
@@ -111,23 +99,6 @@ namespace AspNetCore.Identity.MongoDB
             return (TKey)TypeDescriptor.GetConverter(typeof(TKey)).ConvertFromInvariantString(id);
         }
 
-        public async Task<TUser> FindByLoginAsync(string loginProvider, string providerKey, CancellationToken cancellationToken = default(CancellationToken))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            ThrowIfDisposed();
-
-            Ensure.IsNotNullOrEmpty(loginProvider, nameof(loginProvider));
-            Ensure.IsNotNullOrEmpty(providerKey, nameof(providerKey));
-
-            var filter = Builders<TUser>.Filter.ElemMatch(u => u.Logins,
-                 Builders<IdentityUserLogin>.Filter.And(
-                   Builders<IdentityUserLogin>.Filter.Eq(lg => lg.LoginProvider, loginProvider),
-                   Builders<IdentityUserLogin>.Filter.Eq(lg => lg.ProviderKey, providerKey)
-               ));
-
-            return await UsersCollection.Find(filter).FirstOrDefaultAsync();
-        }
-
         public async Task<TUser> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -140,20 +111,13 @@ namespace AspNetCore.Identity.MongoDB
             return await UsersCollection.Find(filter).FirstOrDefaultAsync();
         }
 
-        public Task<IList<UserLoginInfo>> GetLoginsAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
-        {
-            var logins = from l in user.Logins
-                         select new UserLoginInfo(l.LoginProvider, l.ProviderKey, l.ProviderDisplayName);
-            return Task.FromResult<IList<UserLoginInfo>>(logins.ToList());
-        }
-
         public Task<string> GetNormalizedUserNameAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
             Ensure.IsNotNull(user, nameof(user));
-            
+
             return Task.FromResult(user.NormalizedUserName);
         }
 
@@ -189,24 +153,6 @@ namespace AspNetCore.Identity.MongoDB
             Ensure.IsNotNull(user, nameof(user));
 
             return Task.FromResult(user.UserName);
-        }
-
-        public Task RemoveLoginAsync(TUser user, string loginProvider, string providerKey, CancellationToken cancellationToken = default(CancellationToken))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            ThrowIfDisposed();
-
-            Ensure.IsNotNull(user, nameof(user));
-            Ensure.IsNotNullOrEmpty(loginProvider, nameof(loginProvider));
-            Ensure.IsNotNullOrEmpty(providerKey, nameof(providerKey));
-
-            var login = user.Logins.FirstOrDefault(ul => ul.LoginProvider == loginProvider && ul.ProviderKey == providerKey);
-            if (login != null)
-            {
-                user.Logins.Remove(login);
-            }
-
-            return Task.CompletedTask;
         }
 
         public Task SetNormalizedUserNameAsync(TUser user, string normalizedName, CancellationToken cancellationToken = default(CancellationToken))
@@ -245,27 +191,66 @@ namespace AspNetCore.Identity.MongoDB
 
             return replaceResult.Success() ? IdentityResult.Success : IdentityResult.Failed();
         }
+        #endregion
 
-
-        /// <summary>
-        /// Throws if this class has been disposed.
-        /// </summary>
-        protected void ThrowIfDisposed()
+        #region IUserLoginStore
+        public Task AddLoginAsync(TUser user, UserLoginInfo login, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (_disposed)
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(user, nameof(user));
+            Ensure.IsNotNull(login, nameof(login));
+
+            user.Logins.Add(new IdentityUserLogin(login));
+
+            return Task.CompletedTask;
+        }
+
+        public async Task<TUser> FindByLoginAsync(string loginProvider, string providerKey, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNullOrEmpty(loginProvider, nameof(loginProvider));
+            Ensure.IsNotNullOrEmpty(providerKey, nameof(providerKey));
+
+            var filter = Builders<TUser>.Filter.ElemMatch(u => u.Logins,
+                 Builders<IdentityUserLogin>.Filter.And(
+                   Builders<IdentityUserLogin>.Filter.Eq(lg => lg.LoginProvider, loginProvider),
+                   Builders<IdentityUserLogin>.Filter.Eq(lg => lg.ProviderKey, providerKey)
+               ));
+
+            return await UsersCollection.Find(filter).FirstOrDefaultAsync();
+        }
+
+        public Task<IList<UserLoginInfo>> GetLoginsAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            var logins = from l in user.Logins
+                         select new UserLoginInfo(l.LoginProvider, l.ProviderKey, l.ProviderDisplayName);
+            return Task.FromResult<IList<UserLoginInfo>>(logins.ToList());
+        }
+
+        public Task RemoveLoginAsync(TUser user, string loginProvider, string providerKey, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(user, nameof(user));
+            Ensure.IsNotNullOrEmpty(loginProvider, nameof(loginProvider));
+            Ensure.IsNotNullOrEmpty(providerKey, nameof(providerKey));
+
+            var login = user.Logins.FirstOrDefault(ul => ul.LoginProvider == loginProvider && ul.ProviderKey == providerKey);
+            if (login != null)
             {
-                throw new ObjectDisposedException(GetType().Name);
+                user.Logins.Remove(login);
             }
-        }
 
-        /// <summary>
-        /// Dispose the store
-        /// </summary>
-        public void Dispose()
-        {
-            _disposed = true;
+            return Task.CompletedTask;
         }
+        #endregion
 
+        #region IUserClaimStore
         public Task<IList<Claim>> GetClaimsAsync(TUser user, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
@@ -284,7 +269,7 @@ namespace AspNetCore.Identity.MongoDB
             Ensure.IsNotNull(user, nameof(user));
 
             Ensure.IsNotNull(claims, nameof(claims));
-            
+
             foreach (var claim in claims)
             {
                 user.Claims.Add(new IdentityUserClaim(claim));
@@ -345,5 +330,28 @@ namespace AspNetCore.Identity.MongoDB
 
             return await UsersCollection.Find(filter).ToListAsync();
         }
+        #endregion
+
+        #region Dispose
+        /// <summary>
+        /// Throws if this class has been disposed.
+        /// </summary>
+        protected void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
+        }
+
+        /// <summary>
+        /// Dispose the store
+        /// </summary>
+        public void Dispose()
+        {
+            _disposed = true;
+        }
+        #endregion
+
     }
 }
