@@ -18,8 +18,8 @@ namespace AspNetCore.Identity.MongoDB
         IUserRoleStore<TUser>,
         IUserPasswordStore<TUser>,
         IUserSecurityStampStore<TUser>,
-        IUserEmailStore<TUser>
-        //IUserLockoutStore<TUser>,
+        IUserEmailStore<TUser>,
+        IUserLockoutStore<TUser>
         //IUserPhoneNumberStore<TUser>,
         //IQueryableUserStore<TUser>,
         //IUserTwoFactorStore<TUser>,
@@ -494,6 +494,68 @@ namespace AspNetCore.Identity.MongoDB
         }
         #endregion
 
+        #region IUserLockoutStore
+        public Task<DateTimeOffset?> GetLockoutEndDateAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            Ensure.IsNotNull(user, nameof(user));
+            return Task.FromResult(user.LockoutEnd);
+        }
+
+        public Task SetLockoutEndDateAsync(TUser user, DateTimeOffset? lockoutEnd, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            Ensure.IsNotNull(user, nameof(user));
+            user.LockoutEnd = lockoutEnd;
+            return Task.CompletedTask;
+        }
+
+        public Task<int> IncrementAccessFailedCountAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            Ensure.IsNotNull(user, nameof(user));
+            user.AccessFailedCount++;
+            return Task.FromResult(user.AccessFailedCount);
+        }
+
+        public Task ResetAccessFailedCountAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            Ensure.IsNotNull(user, nameof(user));
+            user.AccessFailedCount = 0;
+            return Task.CompletedTask;
+        }
+
+        public Task<int> GetAccessFailedCountAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            Ensure.IsNotNull(user, nameof(user));
+            return Task.FromResult(user.AccessFailedCount);
+        }
+
+        public Task<bool> GetLockoutEnabledAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            Ensure.IsNotNull(user, nameof(user));
+            return Task.FromResult(user.LockoutEnabled);
+        }
+
+        public Task SetLockoutEnabledAsync(TUser user, bool enabled, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            Ensure.IsNotNull(user, nameof(user));
+            user.LockoutEnabled = enabled;
+            return Task.CompletedTask;
+        }
+        #endregion
+
         #region Dispose
         /// <summary>
         /// Throws if this class has been disposed.
@@ -513,6 +575,8 @@ namespace AspNetCore.Identity.MongoDB
         {
             _disposed = true;
         }
+
+        
         #endregion
 
     }
