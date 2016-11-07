@@ -19,8 +19,8 @@ namespace AspNetCore.Identity.MongoDB
         IUserPasswordStore<TUser>,
         IUserSecurityStampStore<TUser>,
         IUserEmailStore<TUser>,
-        IUserLockoutStore<TUser>
-        //IUserPhoneNumberStore<TUser>,
+        IUserLockoutStore<TUser>,
+        IUserPhoneNumberStore<TUser>
         //IQueryableUserStore<TUser>,
         //IUserTwoFactorStore<TUser>,
         //IUserAuthenticationTokenStore<TUser>
@@ -556,6 +556,42 @@ namespace AspNetCore.Identity.MongoDB
         }
         #endregion
 
+        #region IUserPhoneNumberStore
+        public Task SetPhoneNumberAsync(TUser user, string phoneNumber, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            Ensure.IsNotNull(user, nameof(user));
+            user.PhoneNumber = phoneNumber;
+            return Task.CompletedTask;
+        }
+
+        public Task<string> GetPhoneNumberAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            Ensure.IsNotNull(user, nameof(user));
+            return Task.FromResult(user.PhoneNumber);
+        }
+
+        public Task<bool> GetPhoneNumberConfirmedAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            Ensure.IsNotNull(user, nameof(user));
+            return Task.FromResult(user.PhoneNumberConfirmed);
+        }
+
+        public Task SetPhoneNumberConfirmedAsync(TUser user, bool confirmed, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            Ensure.IsNotNull(user, nameof(user));
+            user.PhoneNumberConfirmed = confirmed;
+            return Task.CompletedTask;
+        }
+        #endregion
+
         #region Dispose
         /// <summary>
         /// Throws if this class has been disposed.
@@ -577,6 +613,8 @@ namespace AspNetCore.Identity.MongoDB
         }
 
         
+
+
         #endregion
 
     }
