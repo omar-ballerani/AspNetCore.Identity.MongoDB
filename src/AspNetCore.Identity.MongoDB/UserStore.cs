@@ -15,8 +15,8 @@ namespace AspNetCore.Identity.MongoDB
     public class UserStore<TUser, TKey> :
         IUserLoginStore<TUser>,
         IUserClaimStore<TUser>,
-        IUserRoleStore<TUser>
-        //IUserPasswordStore<TUser>,
+        IUserRoleStore<TUser>,
+        IUserPasswordStore<TUser>
         //IUserSecurityStampStore<TUser>,
         //IUserEmailStore<TUser>,
         //IUserLockoutStore<TUser>,
@@ -389,6 +389,37 @@ namespace AspNetCore.Identity.MongoDB
         }
         #endregion
 
+        #region IUserPasswordStore
+        public Task SetPasswordHashAsync(TUser user, string passwordHash, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            if (user == null)
+            {
+                throw new ArgumentNullException(nameof(user));
+            }
+            user.PasswordHash = passwordHash;
+            return Task.CompletedTask;
+        }
+
+        public Task<string> GetPasswordHashAsync(TUser user, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            if (user == null)
+            {
+                throw new ArgumentNullException(nameof(user));
+            }
+            return Task.FromResult(user.PasswordHash);
+        }
+
+        public Task<bool> HasPasswordAsync(TUser user, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(user.PasswordHash != null);
+        }
+        #endregion
+
         #region Dispose
         /// <summary>
         /// Throws if this class has been disposed.
@@ -408,6 +439,8 @@ namespace AspNetCore.Identity.MongoDB
         {
             _disposed = true;
         }
+
+        
 
         #endregion
 
