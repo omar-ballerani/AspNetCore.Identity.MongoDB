@@ -20,9 +20,9 @@ namespace AspNetCore.Identity.MongoDB
         IUserSecurityStampStore<TUser>,
         IUserEmailStore<TUser>,
         IUserLockoutStore<TUser>,
-        IUserPhoneNumberStore<TUser>
+        IUserPhoneNumberStore<TUser>,
+        IUserTwoFactorStore<TUser>
         //IQueryableUserStore<TUser>,
-        //IUserTwoFactorStore<TUser>,
         //IUserAuthenticationTokenStore<TUser>
         where TUser : IdentityUser<TKey>
         where TKey : IEquatable<TKey>
@@ -592,6 +592,25 @@ namespace AspNetCore.Identity.MongoDB
         }
         #endregion
 
+        #region IUserTwoFactorStore
+        public Task SetTwoFactorEnabledAsync(TUser user, bool enabled, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            Ensure.IsNotNull(user, nameof(user));
+            user.TwoFactorEnabled = enabled;
+            return Task.CompletedTask;
+        }
+
+        public Task<bool> GetTwoFactorEnabledAsync(TUser user, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            Ensure.IsNotNull(user, nameof(user));
+            return Task.FromResult(user.TwoFactorEnabled);
+        }
+        #endregion
+
         #region Dispose
         /// <summary>
         /// Throws if this class has been disposed.
@@ -613,6 +632,8 @@ namespace AspNetCore.Identity.MongoDB
         }
 
         
+
+
 
 
         #endregion
