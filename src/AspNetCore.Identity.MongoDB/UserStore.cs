@@ -17,8 +17,8 @@ namespace AspNetCore.Identity.MongoDB
         IUserClaimStore<TUser>,
         IUserRoleStore<TUser>,
         IUserPasswordStore<TUser>,
-        IUserSecurityStampStore<TUser>
-        //IUserEmailStore<TUser>,
+        IUserSecurityStampStore<TUser>,
+        IUserEmailStore<TUser>
         //IUserLockoutStore<TUser>,
         //IUserPhoneNumberStore<TUser>,
         //IQueryableUserStore<TUser>,
@@ -394,10 +394,7 @@ namespace AspNetCore.Identity.MongoDB
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
-            if (user == null)
-            {
-                throw new ArgumentNullException(nameof(user));
-            }
+            Ensure.IsNotNull(user, nameof(user));
             user.PasswordHash = passwordHash;
             return Task.CompletedTask;
         }
@@ -406,10 +403,7 @@ namespace AspNetCore.Identity.MongoDB
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
-            if (user == null)
-            {
-                throw new ArgumentNullException(nameof(user));
-            }
+            Ensure.IsNotNull(user, nameof(user));
             return Task.FromResult(user.PasswordHash);
         }
 
@@ -425,10 +419,7 @@ namespace AspNetCore.Identity.MongoDB
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
-            if (user == null)
-            {
-                throw new ArgumentNullException(nameof(user));
-            }
+            Ensure.IsNotNull(user, nameof(user));
             user.SecurityStamp = stamp;
             return Task.CompletedTask;
         }
@@ -437,11 +428,69 @@ namespace AspNetCore.Identity.MongoDB
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
-            if (user == null)
-            {
-                throw new ArgumentNullException(nameof(user));
-            }
+            Ensure.IsNotNull(user, nameof(user));
             return Task.FromResult(user.SecurityStamp);
+        }
+        #endregion
+
+        #region IUserEmailStore
+        public Task SetEmailAsync(TUser user, string email, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            Ensure.IsNotNull(user, nameof(user));
+            user.Email = email;
+            return Task.CompletedTask;
+        }
+
+        public Task<string> GetEmailAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            Ensure.IsNotNull(user, nameof(user));
+            return Task.FromResult(user.Email);
+        }
+
+        public Task<bool> GetEmailConfirmedAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            Ensure.IsNotNull(user, nameof(user));
+            return Task.FromResult(user.EmailConfirmed);
+        }
+
+        public Task SetEmailConfirmedAsync(TUser user, bool confirmed, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            Ensure.IsNotNull(user, nameof(user));
+            user.EmailConfirmed = confirmed;
+            return Task.CompletedTask;
+        }
+
+        public Task<TUser> FindByEmailAsync(string normalizedEmail, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            var filter = Builders<TUser>.Filter.Eq(u => u.NormalizedEmail, normalizedEmail);
+            return UsersCollection.Find(filter).FirstOrDefaultAsync(cancellationToken);
+        }
+
+        public Task<string> GetNormalizedEmailAsync(TUser user, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            Ensure.IsNotNull(user, nameof(user));
+            return Task.FromResult(user.NormalizedEmail);
+        }
+
+        public Task SetNormalizedEmailAsync(TUser user, string normalizedEmail, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            Ensure.IsNotNull(user, nameof(user));
+            user.NormalizedEmail = normalizedEmail;
+            return Task.CompletedTask;
         }
         #endregion
 
