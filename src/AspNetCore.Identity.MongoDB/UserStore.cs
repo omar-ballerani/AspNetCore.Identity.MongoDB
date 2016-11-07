@@ -108,7 +108,7 @@ namespace AspNetCore.Identity.MongoDB
 
             var filter = Builders<TUser>.Filter.Eq(u => u.NormalizedUserName, normalizedUserName);
 
-            return await UsersCollection.Find(filter).FirstOrDefaultAsync();
+            return await UsersCollection.Find(filter).FirstOrDefaultAsync(cancellationToken);
         }
 
         public Task<string> GetNormalizedUserNameAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
@@ -221,7 +221,7 @@ namespace AspNetCore.Identity.MongoDB
                    Builders<IdentityUserLogin>.Filter.Eq(lg => lg.ProviderKey, providerKey)
                ));
 
-            return await UsersCollection.Find(filter).FirstOrDefaultAsync();
+            return await UsersCollection.Find(filter).FirstOrDefaultAsync(cancellationToken);
         }
 
         public Task<IList<UserLoginInfo>> GetLoginsAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
@@ -328,7 +328,7 @@ namespace AspNetCore.Identity.MongoDB
                    Builders<IdentityUserClaim>.Filter.Eq(lg => lg.ClaimValue, claim.Value)
                ));
 
-            return await UsersCollection.Find(filter).ToListAsync();
+            return await UsersCollection.Find(filter).ToListAsync(cancellationToken);
         }
         #endregion
 
@@ -385,7 +385,7 @@ namespace AspNetCore.Identity.MongoDB
 
             var filter = Builders<TUser>.Filter.ElemMatch(u => u.Roles, ur => ur == roleName);
 
-            return await UsersCollection.Find(filter).ToListAsync();
+            return await UsersCollection.Find(filter).ToListAsync(cancellationToken);
         }
         #endregion
 
