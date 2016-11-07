@@ -22,8 +22,8 @@ namespace AspNetCore.Identity.MongoDB
         IUserLockoutStore<TUser>,
         IUserPhoneNumberStore<TUser>,
         IUserTwoFactorStore<TUser>,
-        IUserAuthenticationTokenStore<TUser>
-        //IQueryableUserStore<TUser>,
+        IUserAuthenticationTokenStore<TUser>,
+        IQueryableUserStore<TUser>
         where TUser : IdentityUser<TKey>
         where TKey : IEquatable<TKey>
     {
@@ -657,6 +657,16 @@ namespace AspNetCore.Identity.MongoDB
 
             var token = user.GetToken(loginProvider, name);
             return Task.FromResult(token == null? null : token.Value);
+        }
+        #endregion
+
+        #region IQueryableUserStore
+        public IQueryable<TUser> Users
+        {
+            get
+            {
+                return UsersCollection.AsQueryable();
+            }
         }
         #endregion
 
