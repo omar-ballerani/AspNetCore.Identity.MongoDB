@@ -152,6 +152,22 @@ namespace AspNetCore.Identity.MongoDB
         public virtual ICollection<IdentityUserLogin> Logins { get; } = new List<IdentityUserLogin>();
 
         /// <summary>
+        /// Property for this users tokens.
+        /// </summary>
+        public virtual ICollection<IdentityUserToken> Tokens { get; } = new List<IdentityUserToken>();
+
+        /// <summary>
+        /// Returns the first token with the specified provider & name
+        /// </summary>
+        /// <param name="loginProvider">The login provider</param>
+        /// <param name="name">The name</param>
+        /// <returns></returns>
+        public IdentityUserToken GetToken(string loginProvider, string name)
+        {
+            return Tokens.FirstOrDefault(t => t.LoginProvider == loginProvider && t.Name == name);
+        }
+
+        /// <summary>
         /// Returns the username for this user.
         /// </summary>
         public override string ToString()

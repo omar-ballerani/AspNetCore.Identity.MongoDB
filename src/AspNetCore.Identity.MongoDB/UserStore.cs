@@ -21,9 +21,9 @@ namespace AspNetCore.Identity.MongoDB
         IUserEmailStore<TUser>,
         IUserLockoutStore<TUser>,
         IUserPhoneNumberStore<TUser>,
-        IUserTwoFactorStore<TUser>
+        IUserTwoFactorStore<TUser>,
+        IUserAuthenticationTokenStore<TUser>
         //IQueryableUserStore<TUser>,
-        //IUserAuthenticationTokenStore<TUser>
         where TUser : IdentityUser<TKey>
         where TKey : IEquatable<TKey>
     {
@@ -611,6 +611,55 @@ namespace AspNetCore.Identity.MongoDB
         }
         #endregion
 
+        #region IUserAuthenticationTokenStore
+        public Task SetTokenAsync(TUser user, string loginProvider, string name, string value, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(user, nameof(user));
+
+            var token = user.GetToken(loginProvider, name);
+            if (token == null)
+            {
+                user.Tokens.Add(new IdentityUserToken(loginProvider, name, value));
+            }
+            else
+            {
+                token.Value = value;
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task RemoveTokenAsync(TUser user, string loginProvider, string name, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(user, nameof(user));
+
+            var token = user.GetToken(loginProvider, name);
+            if (token != null)
+            {
+                user.Tokens.Remove(token);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task<string> GetTokenAsync(TUser user, string loginProvider, string name, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(user, nameof(user));
+
+            var token = user.GetToken(loginProvider, name);
+            return Task.FromResult(token == null? null : token.Value);
+        }
+        #endregion
+
         #region Dispose
         /// <summary>
         /// Throws if this class has been disposed.
@@ -630,12 +679,6 @@ namespace AspNetCore.Identity.MongoDB
         {
             _disposed = true;
         }
-
-        
-
-
-
-
         #endregion
 
     }
