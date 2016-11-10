@@ -12,5 +12,10 @@ namespace AspNetCore.Identity.MongoDB
         {
             return result.IsAcknowledged && result.IsModifiedCountAvailable && result.ModifiedCount == 1;
         }
+
+        public static bool Success(this DeleteResult result, int expectedDeletedRecords = 1)
+        {
+            return result.IsAcknowledged && result.DeletedCount == expectedDeletedRecords;
+        }
     }
 }

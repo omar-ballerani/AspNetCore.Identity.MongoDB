@@ -68,9 +68,9 @@ namespace AspNetCore.Identity.MongoDB
 
             var filter = Builders<TUser>.Filter.Eq(u => u.Id, user.Id);
 
-            await UsersCollection.DeleteOneAsync(filter, cancellationToken);
+            var deleteResult = await UsersCollection.DeleteOneAsync(filter, cancellationToken);
 
-            return IdentityResult.Success;
+            return deleteResult.Success() ? IdentityResult.Success : IdentityResult.Failed();
         }
 
         public async Task<TUser> FindByIdAsync(string userId, CancellationToken cancellationToken = default(CancellationToken))

@@ -1,14 +1,213 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Identity;
+using MongoDB.Bson;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Threading;
+using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver;
+using System.ComponentModel;
+using System.Security.Claims;
 
 namespace AspNetCore.Identity.MongoDB
 {
-    public class RoleStore
+    public class RoleStore<TRole, TKey, TRoleClaim> :
+        IRoleStore<TRole>
+        where TRole: IdentityRole<TKey, TRoleClaim>
+        where TKey : IEquatable<TKey>
+        where TRoleClaim : IdentityRoleClaim
     {
-        public RoleStore()
+        private bool _disposed = false;
+
+        public RoleStore(IMongoDatabase mongoDatabase, IdentityErrorDescriber describer = null)
         {
+            Ensure.IsNotNull(mongoDatabase, nameof(mongoDatabase));
+            ErrorDescriber = describer ?? new IdentityErrorDescriber();
+            RolesCollection = mongoDatabase.GetCollection<TRole>("Roles");
         }
+
+        /// <summary>
+        /// Gets the database context for this store.
+        /// </summary>
+        protected IMongoCollection<TRole> RolesCollection { get; private set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="IdentityErrorDescriber"/> for any error that occurred with the current operation.
+        /// </summary>
+        protected IdentityErrorDescriber ErrorDescriber { get; set; }
+
+        #region IRoleStore
+        public async Task<IdentityResult> CreateAsync(TRole role, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(role, nameof(role));
+
+            await RolesCollection.InsertOneAsync(role, null, cancellationToken);
+
+            return IdentityResult.Success;
+        }
+
+        public async Task<IdentityResult> UpdateAsync(TRole role, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            Ensure.IsNotNull(role, nameof(role));
+            var filter = Builders<TRole>.Filter.Eq(r => r.Id, role.Id);
+            var replaceResult = await RolesCollection.ReplaceOneAsync(filter, role, new UpdateOptions { IsUpsert = false }, cancellationToken);
+
+            return replaceResult.Success()? IdentityResult.Success : IdentityResult.Failed();
+        }
+
+        public async Task<IdentityResult> DeleteAsync(TRole role, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(role, nameof(role));
+
+            var filter = Builders<TRole>.Filter.Eq(r => r.Id, role.Id);
+            var deleteResult = await RolesCollection.DeleteOneAsync(filter, cancellationToken);
+            return deleteResult.Success() ? IdentityResult.Success : IdentityResult.Failed();
+        }
+
+        public Task<string> GetRoleIdAsync(TRole role, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(role, nameof(role));
+
+            return Task.FromResult(ConvertIdToString(role.Id));
+        }
+
+        /// <summary>
+        /// Converts the provided <paramref name="id"/> to its string representation.
+        /// </summary>
+        /// <param name="id">The id to convert.</param>
+        /// <returns>An <see cref="string"/> representation of the provided <paramref name="id"/>.</returns>
+        public virtual string ConvertIdToString(TKey id)
+        {
+            if (id.Equals(default(TKey)))
+            {
+                return null;
+            }
+            return id.ToString();
+        }
+
+        public Task<string> GetRoleNameAsync(TRole role, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(role, nameof(role));
+
+            return Task.FromResult(role.Name);
+        }
+
+        public Task SetRoleNameAsync(TRole role, string roleName, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(role, nameof(role));
+
+            role.Name = roleName;
+            return Task.CompletedTask;
+        }
+
+        public Task<string> GetNormalizedRoleNameAsync(TRole role, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(role, nameof(role));
+
+            return Task.FromResult(role.NormalizedName);
+        }
+
+        public Task SetNormalizedRoleNameAsync(TRole role, string normalizedName, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(role, nameof(role));
+
+            role.NormalizedName = normalizedName;
+            return Task.CompletedTask;
+        }
+
+        public Task<TRole> FindByIdAsync(string roleId, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            var typedRoleId = ConvertIdFromString(roleId);
+            var filter = Builders<TRole>.Filter.Eq(r => r.Id, typedRoleId);
+            return RolesCollection.Find(filter).FirstOrDefaultAsync(cancellationToken); 
+        }
+
+        /// <summary>
+        /// Converts the provided <paramref name="id"/> to a strongly typed key object.
+        /// </summary>
+        /// <param name="id">The id to convert.</param>
+        /// <returns>An instance of <typeparamref name="TKey"/> representing the provided <paramref name="id"/>.</returns>
+        public virtual TKey ConvertIdFromString(string id)
+        {
+            if (id == null)
+            {
+                return default(TKey);
+            }
+            return (TKey)TypeDescriptor.GetConverter(typeof(TKey)).ConvertFromInvariantString(id);
+        }
+
+        public Task<TRole> FindByNameAsync(string normalizedRoleName, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            var filter = Builders<TRole>.Filter.Eq(r => r.NormalizedName, normalizedRoleName);
+            return RolesCollection.Find(filter).FirstOrDefaultAsync(cancellationToken);
+        }
+
+        #endregion
+
+        #region IRoleClaimStore
+        public Task<IList<Claim>> GetClaimsAsync(TRole role, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task AddClaimAsync(TRole role, Claim claim, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task RemoveClaimAsync(TRole role, Claim claim, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            throw new NotImplementedException();
+        }
+        #endregion
+
+        #region Dispose
+        /// <summary>
+        /// Throws if this class has been disposed.
+        /// </summary>
+        protected void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
+        }
+
+        /// <summary>
+        /// Dispose the stores
+        /// </summary>
+        public void Dispose()
+        {
+            _disposed = true;
+        }
+        #endregion
     }
 }
