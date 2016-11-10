@@ -13,7 +13,8 @@ using System.Security.Claims;
 namespace AspNetCore.Identity.MongoDB
 {
     public class RoleStore<TRole, TKey> :
-        IRoleClaimStore<TRole>
+        IRoleClaimStore<TRole>,
+        IQueryableRoleStore<TRole>
         where TRole: IdentityRole<TKey>
         where TKey : IEquatable<TKey>
         
@@ -208,6 +209,16 @@ namespace AspNetCore.Identity.MongoDB
                 role.Claims.Remove(c);
             }
             return Task.CompletedTask;
+        }
+        #endregion
+
+        #region IQueryableRoleStore
+        public IQueryable<TRole> Roles
+        {
+            get
+            {
+                return RolesCollection.AsQueryable();
+            }
         }
         #endregion
 
