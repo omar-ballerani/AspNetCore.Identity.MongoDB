@@ -5,9 +5,8 @@ using System.Threading.Tasks;
 
 namespace AspNetCore.Identity.MongoDB
 {
-    public class IdentityRole<TKey, TRoleClaim>
+    public class IdentityRole<TKey>
         where TKey : IEquatable<TKey>
-        where TRoleClaim : IdentityRoleClaim
     {
         /// <summary>
         /// Gets or sets the primary key for this role.
@@ -32,6 +31,6 @@ namespace AspNetCore.Identity.MongoDB
         /// <summary>
         /// Property for claims in this role.
         /// </summary>
-        public virtual ICollection<TRoleClaim> Claims { get; } = new List<TRoleClaim>();
+        public virtual ICollection<IdentityRoleClaim> Claims { get; } = new List<IdentityRoleClaim>();
     }
 }

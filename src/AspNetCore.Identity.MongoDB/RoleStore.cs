@@ -12,11 +12,11 @@ using System.Security.Claims;
 
 namespace AspNetCore.Identity.MongoDB
 {
-    public class RoleStore<TRole, TKey, TRoleClaim> :
-        IRoleStore<TRole>
-        where TRole: IdentityRole<TKey, TRoleClaim>
+    public class RoleStore<TRole, TKey> :
+        IRoleClaimStore<TRole>
+        where TRole: IdentityRole<TKey>
         where TKey : IEquatable<TKey>
-        where TRoleClaim : IdentityRoleClaim
+        
     {
         private bool _disposed = false;
 
@@ -175,17 +175,39 @@ namespace AspNetCore.Identity.MongoDB
         #region IRoleClaimStore
         public Task<IList<Claim>> GetClaimsAsync(TRole role, CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            ThrowIfDisposed();
+
+            Ensure.IsNotNull(role, nameof(role));
+
+            return Task.FromResult<IList<Claim>>( (role.Claims.Select(rc => rc.ToClaim())).ToList());
         }
 
         public Task AddClaimAsync(TRole role, Claim claim, CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            ThrowIfDisposed();
+            Ensure.IsNotNull(role, nameof(role));
+            Ensure.IsNotNull(claim, nameof(claim));
+            role.Claims.Add(new IdentityRoleClaim(claim));
+            return Task.CompletedTask;
         }
 
         public Task RemoveClaimAsync(TRole role, Claim claim, CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            ThrowIfDisposed();
+            if (role == null)
+            {
+                throw new ArgumentNullException(nameof(role));
+            }
+            if (claim == null)
+            {
+                throw new ArgumentNullException(nameof(claim));
+            }
+            var claims = role.Claims.Where(rc => rc.ClaimValue == claim.Value && rc.ClaimType == claim.Type).ToList();
+            foreach (var c in claims)
+            {
+                role.Claims.Remove(c);
+            }
+            return Task.CompletedTask;
         }
         #endregion
 

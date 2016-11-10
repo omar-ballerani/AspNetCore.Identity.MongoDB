@@ -8,6 +8,11 @@ namespace AspNetCore.Identity.MongoDB
 {
     public class IdentityRoleClaim
     {
+        public IdentityRoleClaim(Claim claim)
+        {
+            ClaimType = claim.Type;
+            ClaimValue = claim.Value;
+        }
         /// <summary>
         /// Gets or sets the identifier for this role claim.
         /// </summary>
@@ -32,14 +37,5 @@ namespace AspNetCore.Identity.MongoDB
             return new Claim(ClaimType, ClaimValue);
         }
 
-        /// <summary>
-        /// Initializes by copying ClaimType and ClaimValue from the other claim.
-        /// </summary>
-        /// <param name="other">The claim to initialize from.</param>
-        public virtual void InitializeFromClaim(Claim other)
-        {
-            ClaimType = other?.Type;
-            ClaimValue = other?.Value;
-        }
     }
 }
