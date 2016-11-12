@@ -9,23 +9,11 @@ namespace AspNetCore.Identity.MongoDB
     /// <typeparam name="TKey">The type used for the primary key for this user that possesses this claim.</typeparam>
     public class IdentityUserClaim
     {
-        public IdentityUserClaim(Claim claim): this()
+        public IdentityUserClaim(Claim claim)
         {
             this.ClaimType = claim.Type;
             this.ClaimValue = claim.Value;
         }
-
-        /// <summary>
-        /// Default ctor - Initialize the istance
-        /// </summary>
-        public IdentityUserClaim()
-        {
-            this.Id = Guid.NewGuid().ToString();
-        }
-        /// <summary>
-        /// Gets or sets the identifier for this user claim.
-        /// </summary>
-        public virtual string Id { get; set; }
 
         /// <summary>
         /// Gets or sets the claim type for this claim.
