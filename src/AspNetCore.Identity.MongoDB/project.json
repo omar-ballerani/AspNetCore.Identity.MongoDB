@@ -28,7 +28,7 @@
     "netstandard1.6": {
       "imports": "dnxcore50",
       "dependencies": {
-        "System.ComponentModel.TypeConverter": "4.3.0-*"
+        
       }
 
     }

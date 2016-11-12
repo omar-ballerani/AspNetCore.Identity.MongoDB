@@ -1,17 +1,21 @@
-﻿using System;
+﻿using MongoDB.Bson;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace AspNetCore.Identity.MongoDB
 {
-    public class IdentityRole<TKey>
-        where TKey : IEquatable<TKey>
+    public class IdentityRole
     {
+        public IdentityRole()
+        {
+            Id = ObjectId.GenerateNewId();
+        }
         /// <summary>
         /// Gets or sets the primary key for this role.
         /// </summary>
-        public virtual TKey Id { get; set; }
+        public virtual ObjectId Id { get; set; }
 
         /// <summary>
         /// Gets or sets the name for this role.

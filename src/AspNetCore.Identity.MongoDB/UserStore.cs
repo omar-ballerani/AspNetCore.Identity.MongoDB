@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using MongoDB.Driver.Core.Misc;
 using System.ComponentModel;
 using System.Security.Claims;
+using MongoDB.Bson;
 
 namespace AspNetCore.Identity.MongoDB
 {
@@ -24,7 +25,7 @@ namespace AspNetCore.Identity.MongoDB
         IUserTwoFactorStore<TUser>,
         IUserAuthenticationTokenStore<TUser>,
         IQueryableUserStore<TUser>
-        where TUser : IdentityUser<TKey>
+        where TUser : IdentityUser
         where TKey : IEquatable<TKey>
     {
         private bool _disposed;
@@ -78,25 +79,15 @@ namespace AspNetCore.Identity.MongoDB
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            var convertedId = ConvertIdFromString(userId);
+            ObjectId typedUserId;
+            if (!ObjectId.TryParse(userId, out typedUserId))
+            {
+                throw new ArgumentOutOfRangeException("unable to parse userId");
+            }
 
-            var filter = Builders<TUser>.Filter.Eq(u => u.Id, convertedId);
+            var filter = Builders<TUser>.Filter.Eq(u => u.Id, typedUserId);
 
             return await UsersCollection.Find(filter).SingleOrDefaultAsync();
-        }
-
-        /// <summary>
-        /// Converts the provided <paramref name="id"/> to a strongly typed key object.
-        /// </summary>
-        /// <param name="id">The id to convert.</param>
-        /// <returns>An instance of <typeparamref name="TKey"/> representing the provided <paramref name="id"/>.</returns>
-        protected virtual TKey ConvertIdFromString(string id)
-        {
-            if (id == null)
-            {
-                return default(TKey);
-            }
-            return (TKey)TypeDescriptor.GetConverter(typeof(TKey)).ConvertFromInvariantString(id);
         }
 
         public async Task<TUser> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken = default(CancellationToken))
@@ -128,21 +119,7 @@ namespace AspNetCore.Identity.MongoDB
 
             Ensure.IsNotNull(user, nameof(user));
 
-            return Task.FromResult(ConvertIdToString(user.Id));
-        }
-
-        /// <summary>
-        /// Converts the provided <paramref name="id"/> to its string representation.
-        /// </summary>
-        /// <param name="id">The id to convert.</param>
-        /// <returns>An <see cref="string"/> representation of the provided <paramref name="id"/>.</returns>
-        protected virtual string ConvertIdToString(TKey id)
-        {
-            if (object.Equals(id, default(TKey)))
-            {
-                return null;
-            }
-            return id.ToString();
+            return Task.FromResult(user.Id.ToString());
         }
 
         public Task<string> GetUserNameAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))

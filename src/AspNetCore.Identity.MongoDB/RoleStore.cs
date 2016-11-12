@@ -12,11 +12,10 @@ using System.Security.Claims;
 
 namespace AspNetCore.Identity.MongoDB
 {
-    public class RoleStore<TRole, TKey> :
+    public class RoleStore<TRole> :
         IRoleClaimStore<TRole>,
         IQueryableRoleStore<TRole>
-        where TRole: IdentityRole<TKey>
-        where TKey : IEquatable<TKey>
+        where TRole: IdentityRole
         
     {
         private bool _disposed = false;
@@ -81,21 +80,7 @@ namespace AspNetCore.Identity.MongoDB
 
             Ensure.IsNotNull(role, nameof(role));
 
-            return Task.FromResult(ConvertIdToString(role.Id));
-        }
-
-        /// <summary>
-        /// Converts the provided <paramref name="id"/> to its string representation.
-        /// </summary>
-        /// <param name="id">The id to convert.</param>
-        /// <returns>An <see cref="string"/> representation of the provided <paramref name="id"/>.</returns>
-        public virtual string ConvertIdToString(TKey id)
-        {
-            if (id.Equals(default(TKey)))
-            {
-                return null;
-            }
-            return id.ToString();
+            return Task.FromResult(role.Id.ToString());
         }
 
         public Task<string> GetRoleNameAsync(TRole role, CancellationToken cancellationToken = default(CancellationToken))
@@ -144,23 +129,15 @@ namespace AspNetCore.Identity.MongoDB
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
-            var typedRoleId = ConvertIdFromString(roleId);
+
+            ObjectId typedRoleId;
+            if (!ObjectId.TryParse(roleId, out typedRoleId))
+            {
+                throw new ArgumentOutOfRangeException("unable to parse roleId");
+            }
+
             var filter = Builders<TRole>.Filter.Eq(r => r.Id, typedRoleId);
             return RolesCollection.Find(filter).FirstOrDefaultAsync(cancellationToken); 
-        }
-
-        /// <summary>
-        /// Converts the provided <paramref name="id"/> to a strongly typed key object.
-        /// </summary>
-        /// <param name="id">The id to convert.</param>
-        /// <returns>An instance of <typeparamref name="TKey"/> representing the provided <paramref name="id"/>.</returns>
-        public virtual TKey ConvertIdFromString(string id)
-        {
-            if (id == null)
-            {
-                return default(TKey);
-            }
-            return (TKey)TypeDescriptor.GetConverter(typeof(TKey)).ConvertFromInvariantString(id);
         }
 
         public Task<TRole> FindByNameAsync(string normalizedRoleName, CancellationToken cancellationToken = default(CancellationToken))

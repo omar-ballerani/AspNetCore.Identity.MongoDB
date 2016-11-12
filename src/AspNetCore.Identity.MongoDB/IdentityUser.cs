@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MongoDB.Bson;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -6,47 +7,21 @@ using System.Threading.Tasks;
 namespace AspNetCore.Identity.MongoDB
 {
     /// <summary>
-    /// The default implementation of <see cref="IdentityUser{TKey}"/> which uses a string as a primary key.
-    /// </summary>
-    public class IdentityUser : IdentityUser<string>
-    {
-        /// <summary>
-        /// Initializes a new instance of <see cref="IdentityUser"/>.
-        /// </summary>
-        /// <remarks>
-        /// The Id property is initialized to from a new GUID string value.
-        /// </remarks>
-        public IdentityUser()
-        {
-            Id = Guid.NewGuid().ToString();
-        }
-
-        /// <summary>
-        /// Initializes a new instance of <see cref="IdentityUser"/>.
-        /// </summary>
-        /// <param name="userName">The user name.</param>
-        /// <remarks>
-        /// The Id property is initialized to from a new GUID string value.
-        /// </remarks>
-        public IdentityUser(string userName) : this()
-        {
-            UserName = userName;
-        }
-    }
-
-    /// <summary>
     /// Represents a user in the identity system
     /// </summary>
     /// <typeparam name="TKey">The type used for the primary key for the user.</typeparam>
-    public class IdentityUser<TKey> where TKey : IEquatable<TKey>
+    public class IdentityUser
     {
         /// <summary>
-        /// Initializes a new instance of <see cref="IdentityUser{TKey}"/>.
+        /// Initializes a new instance of <see cref="IdentityUser"/>.
         /// </summary>
-        public IdentityUser() { }
+        public IdentityUser()
+        {
+            Id = ObjectId.GenerateNewId();
+        }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="IdentityUser{TKey}"/>.
+        /// Initializes a new instance of <see cref="IdentityUser"/>.
         /// </summary>
         /// <param name="userName">The user name.</param>
         public IdentityUser(string userName) : this()
@@ -57,7 +32,7 @@ namespace AspNetCore.Identity.MongoDB
         /// <summary>
         /// Gets or sets the primary key for this user.
         /// </summary>
-        public virtual TKey Id { get; set; }
+        public virtual ObjectId Id { get; set; }
 
         /// <summary>
         /// Gets or sets the user name for this user.
