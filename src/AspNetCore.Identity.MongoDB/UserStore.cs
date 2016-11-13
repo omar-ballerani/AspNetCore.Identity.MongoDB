@@ -13,7 +13,7 @@ using MongoDB.Bson;
 
 namespace AspNetCore.Identity.MongoDB
 {
-    public class UserStore<TUser, TKey> :
+    public class UserStore<TUser> :
         IUserLoginStore<TUser>,
         IUserClaimStore<TUser>,
         IUserRoleStore<TUser>,
@@ -26,7 +26,6 @@ namespace AspNetCore.Identity.MongoDB
         IUserAuthenticationTokenStore<TUser>,
         IQueryableUserStore<TUser>
         where TUser : IdentityUser
-        where TKey : IEquatable<TKey>
     {
         private bool _disposed;
 
